@@ -11,6 +11,7 @@ else
 fi
 
 AUDIOSOURCE_APK=${AUDIOSOURCE_APK:-"$AUDIOSOURCE_DEFAULT_APK"}
+AUDIOSOURCE_PKG='fr.dzx.audiosource'
 ANDROID_SERIAL=${ANDROID_SERIAL:-}
 
 PYSOCAT="$(cat <<EOF
@@ -82,7 +83,7 @@ install() {
 	echo '[+] Installing Audio Source'
 
 	adb install -rtg "$AUDIOSOURCE_APK" || {
-		adb uninstall fr.dzx.audiosource
+		adb uninstall "$AUDIOSOURCE_PKG"
 		adb install -tg "$AUDIOSOURCE_APK"
 	}
 }
@@ -123,6 +124,29 @@ run() {
 	echo "[+] Waiting for device $ANDROID_SERIAL"
 
 	adb wait-for-device
+
+	echo '[+] Checking permissions'
+
+	local missing=0
+	local dumpsys=''
+
+	dumpsys="$(adb exec-out dumpsys package "$AUDIOSOURCE_PKG")" || exit "$?"
+
+	for perm in android.permission.POST_NOTIFICATIONS android.permission.RECORD_AUDIO; do
+		if echo "$dumpsys" | grep -q "$perm:.*granted=true" \
+			|| adb exec-out pm grant "$AUDIOSOURCE_PKG" "$perm"; then
+			echo "$perm: granted=true"
+		else
+			echo "$perm: granted=false"
+			missing="$((missing + 1))"
+		fi
+	done
+
+	if [ "$missing" -gt 0 ]; then
+		echo 'Error: Could not grant permissions. Please grant them manually by following:'
+		echo 'https://guidebooks.google.com/android/changesettingspermissions/changeyourapppermissions'
+		exit 1
+	fi
 
 	echo '[+] Starting Audio Source'
 

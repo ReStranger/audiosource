@@ -24,36 +24,80 @@ through ADB, so you can use your Android device as a USB microphone.
     alt="Get it on GitHub"
     height="80">](https://github.com/gdzx/audiosource/releases/latest)
 
-1. Install the Audio Source APK on your Android device through
-   [F-Droid](https://f-droid.org/packages/fr.dzx.audiosource/), or from the
-   [releases](https://github.com/gdzx/audiosource/releases/latest), or by
-   following the [build instructions](#build-and-install).
-2. Download the
-   [`audiosource`](https://github.com/gdzx/audiosource/blob/master/audiosource)
-   client script on your computer from the
-   [releases](https://github.com/gdzx/audiosource/releases/latest), and mark it
-   executable with `chmod a+x ./audiosource`.
+On your Android device:
+
+1. Go to _Settings > About phone_ then tap _Build number_ 7 times to enable the
+   _Developer options_ menu.
+2. In _Settings > System > Developer options_ enable _USB debugging_ (Android
+   Debug Bridge).
+3. Install the Audio Source Android app:
+   - (Recommended) Get it on [F-Droid](https://f-droid.org/packages/fr.dzx.audiosource/).
+   - Or download the APK from the [latest release](https://github.com/gdzx/audiosource/releases/latest).
+   - Or build it from source (see [Build and install](#build-and-install)).
+
+On your Linux PC:
+
+1. Download the `audiosource` client script from the [latest
+   release](https://github.com/gdzx/audiosource/releases/latest) (look for a
+   file named `audiosource` in the assets section).
+2. Open a terminal in the downloads directory (or `cd` into it).
+3. Then make the script executable with `chmod a+x ./audiosource`.
 
 ## Usage
 
-1. Enable *Android Debug Bridge* (ADB) from the *Developer options* and connect
-   the device to your computer.
+1. Connect your Android device to your PC via a USB cable. (Note that wireless
+   debugging should also work, at the cost of increased latency and jitter.)
+2. On your phone, allow USB debugging, if requested.
+3. In the terminal, run `./audiosource run`. This starts Audio Source and
+   immediately attempts to forward the microphone audio.
+4. On your phone, grant microphone/recording permissions, if requested.
+5. If the volume is too low, adjust it with `./audiosource volume 200%`
+   (replace `200%` with the desired level). You will likely need a volume
+   level higher than 100%.
 
-2. Run `./audiosource run` to start Audio Source and forward the audio
-   automatically. You may have to grant the permission to record audio in
-   Android.
+## Troubleshooting
 
-3. Run `./audiosource volume LEVEL` to set the PulseAudio source volume to
-   `LEVEL` (for instance `200%`). You will likely need to set the volume higher
-   than `100%`.
+If you encounter the `adb not found` error, it means that the `adb` command is
+either not installed or not in your system's `PATH`. On most distributions you
+can install it via the package manager:
+
+```console
+# Arch Linux
+$ pacman -S android-tools
+
+# Debian/Ubuntu
+$ apt install android-tools-adb
+```
+
+After installation, verify that it is working with `adb --version`, and re-run
+`audiosource`.
+
+Common tips:
+
+- Ensure your phone is connected, USB debugging is enabled, and the PC is
+  authorized (check your phone for a prompt to allow the connection).
+- Run `adb devices` to confirm your phone is detected (it should show a serial
+  number and "device").
+- If no devices are found, try a different USB cable/port or try to re-enable
+  USB debugging.
 
 ## Multi-device
 
 If you have multiple devices connected then you will have to specify the serial
-number of the device you would like to forward audio to with `./audiosource -s
-SERIAL COMMAND` or by setting the `$ANDROID_SERIAL` environment variable.
+number of the device you would like to forward audio to. Device serial numbers
+can be found by running `adb devices`. 
 
-Device serial numbers can be found by running `adb devices`. 
+Then you can specify the serial number as an argument:
+
+```console
+$ ./audiosource -s 1234 run
+```
+
+Or by setting the `ANDROID_SERIAL` environment variable:
+
+```console
+$ ANDROID_SERIAL=1324 ./audiosource run
+```
 
 You can utilize job control to forward audio from multiple devices
 simultaneously as follows:

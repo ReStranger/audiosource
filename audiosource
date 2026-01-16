@@ -68,12 +68,12 @@ build() {
 install() {
 	if ! command -v adb &> /dev/null; then
 		echo "Error: adb not found"
-		exit 1
+		return 1
 	fi
 
 	if ! [ -f "$AUDIOSOURCE_APK" ]; then
 		echo "Error: apk '$AUDIOSOURCE_APK' not found"
-		exit 1
+		return 1
 	fi
 
 	echo '[+] Waiting for device'
@@ -108,7 +108,7 @@ run() {
 	for cmd in adb pactl python3; do
 		if ! command -v $cmd &> /dev/null; then
 			echo "Error: $cmd not found"
-			exit 1
+			return 1
 		fi
 	done
 
@@ -130,7 +130,7 @@ run() {
 	local missing=0
 	local dumpsys=''
 
-	dumpsys="$(adb exec-out dumpsys package "$AUDIOSOURCE_PKG")" || exit "$?"
+	dumpsys="$(adb exec-out dumpsys package "$AUDIOSOURCE_PKG")" || return "$?"
 
 	for perm in android.permission.POST_NOTIFICATIONS android.permission.RECORD_AUDIO; do
 		if echo "$dumpsys" | grep -q "$perm:.*granted=true" \
@@ -145,7 +145,7 @@ run() {
 	if [ "$missing" -gt 0 ]; then
 		echo 'Error: Could not grant permissions. Please grant them manually by following:'
 		echo 'https://guidebooks.google.com/android/changesettingspermissions/changeyourapppermissions'
-		exit 1
+		return 1
 	fi
 
 	echo '[+] Starting Audio Source'
@@ -195,7 +195,7 @@ main_help() {
 main() {
 	local opt
 
-	while getopts ":s:" opt; do
+	while getopts ':s:' opt; do
 		case "$opt" in
 			s)
 				ANDROID_SERIAL="$OPTARG"

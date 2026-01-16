@@ -105,6 +105,25 @@ _unload() {
 }
 
 run() {
+	local opt
+
+	while getopts 'r' opt; do
+		case "$opt" in
+			r)
+				while true; do
+					"$0" run || [ "$?" -eq 130 ] && exit 130
+					sleep 1
+				done
+				;;
+			*)
+				echo "Error: Invalid option '-$OPTARG' or missing argument"
+				main_help
+				return 2
+		esac
+	done
+
+	shift $((OPTIND-1))
+
 	for cmd in adb pactl python3; do
 		if ! command -v $cmd &> /dev/null; then
 			echo "Error: $cmd not found"
@@ -113,7 +132,7 @@ run() {
 	done
 
 	trap 'rc=$?; _unload; exit $rc' EXIT
-	trap 'exit 130' INT
+	trap 'exit 130' INT TERM
 
 	_unload
 
@@ -174,13 +193,14 @@ main_help() {
 
 		Options:
 
-		   -s SERIAL  Use device with given serial (overrides \$ANDROID_SERIAL)
+		   -s SERIAL     Use device with given serial (overrides \$ANDROID_SERIAL)
 
 		Commands:
 
-		   build         Build Audio Source APK (default: debug)
-		   install       Install Audio Source to Android device (default: debug)
-		   run           Run Audio Source and start forwarding
+		   build         Build Audio Source APK
+		   install       Install Audio Source to Android device
+		   run [-r]      Run Audio Source and start forwarding
+		                 (-r will automatically restart)
 		   volume LEVEL  Set volume to LEVEL (for example, 250%)
 
 		Environment:
@@ -195,7 +215,7 @@ main_help() {
 main() {
 	local opt
 
-	while getopts ':s:' opt; do
+	while getopts 's:' opt; do
 		case "$opt" in
 			s)
 				ANDROID_SERIAL="$OPTARG"

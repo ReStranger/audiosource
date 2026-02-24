@@ -19,30 +19,36 @@ import os
 import socket
 import sys
 
-BUF_SIZE = 1024 
+if not hasattr(fcntl, 'F_SETPIPE_SZ'):
+    fcntl.F_SETPIPE_SZ = 1031
+
+PIPE_SIZE = 4096
+BUF_SIZE = 1024 # Must be less than PIPE_BUF = 4096 for atomic writes.
 
 def socat(inp, out):
-    out_fd = out.fileno()
+    buf = bytearray(BUF_SIZE)
+
+    fcntl.fcntl(out, fcntl.F_SETPIPE_SZ, PIPE_SIZE)
+
+    flags = fcntl.fcntl(out, fcntl.F_GETFL)
+    fcntl.fcntl(out, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
     while True:
-        try:
-            data = inp.recv(BUF_SIZE)
-        except Exception:
-            break
+        n = inp.recv_into(buf, BUF_SIZE, socket.MSG_WAITALL)
 
-        if not data:
+        if n == 0:
             break
 
         try:
-            os.write(out_fd, data)
-        except (BlockingIOError, BrokenPipeError):
-            continue
+            os.write(out.fileno(), buf)
+        except BlockingIOError:
+            pass
 
 def main(sock_name, pipe_name):
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect('\0' + sock_name)
 
-    with open(pipe_name, 'wb', buffering=0) as fifo:
+    with open(pipe_name, 'wb') as fifo:
         socat(sock, fifo)
 
 if __name__ == '__main__':
@@ -112,7 +118,7 @@ run() {
 
 	echo '[+] Loading PulseAudio module'
 
-	pactl load-module module-pipe-source source_name="$AUDIOSOURCE_NAME" channels=1 format=s16 rate=48000 file="/tmp/$AUDIOSOURCE_NAME"
+	pactl load-module module-pipe-source source_name="$AUDIOSOURCE_NAME" channels=1 format=s16 rate=44100 file="/tmp/$AUDIOSOURCE_NAME"
 
 	echo "[+] Waiting for device $ANDROID_SERIAL"
 

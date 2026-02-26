@@ -41,7 +41,7 @@ def socat(inp, out):
             break
 
         try:
-            out.write(buf)
+            os.write(out.fileno(), buf)
         except BlockingIOError:
             pass
 

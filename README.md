@@ -67,6 +67,14 @@ $ pacman -S android-tools
 
 # Debian/Ubuntu
 $ apt install android-tools-adb
+
+# NixOS
+$ nix run nixpkgs#audiosource
+
+# or add to system packages
+environment.systemPackages = [
+    pkgs.audiosource
+];
 ```
 
 After installation, verify that it is working with `adb --version`, and re-run
